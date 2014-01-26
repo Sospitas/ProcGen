@@ -1,0 +1,15 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/Kruskal/Kruskal2.cs">
+    <Files>
+      <File FileName="Assets/Scripts/Kruskal/Kruskal2.cs" Line="62" Column="23" />
+      <File FileName="Assets/Scripts/Kruskal/Kruskal.cs" Line="61" Column="45" />
+      <File FileName="Assets/Scripts/Kruskal/Edge2.cs" Line="4" Column="8" />
+      <File FileName="Assets/Scripts/Kruskal/Edge.cs" Line="37" Column="5" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
