@@ -6,15 +6,20 @@ public class Kruskal2 : MonoBehaviour
 {	
 	public Vector2 gridSize;
 	public Transform gridNode;
+	public Transform pathPrefab, pathGroup;
 	
-	public List<Transform> grid = new List<Transform>();
+	//public List<Transform> grid = new List<Transform>();
+	public Transform[,] grid;
+	public List<Transform> pathList = new List<Transform>();
 	
 	public List<Edge2> edges = new List<Edge2>();
 	
 	void Start()
 	{
-		grid.Clear();
+		//grid.Clear();
+		grid = new Transform[(int)gridSize.x, (int)gridSize.y];
 		edges.Clear();
+		pathList.Clear();
 	}
 	
 	void Setup()
@@ -31,7 +36,7 @@ public class Kruskal2 : MonoBehaviour
 				node = Instantiate(gridNode, new Vector3(i, 0, j), Quaternion.identity) as Transform;
 				node.parent = this.transform;
 				node.name = node.name = "(" + i + ", 0, " + j + ")";
-				grid.Add (node);
+				grid[i, j] = node;
 			}
 		}
 	}
@@ -44,36 +49,6 @@ public class Kruskal2 : MonoBehaviour
 			{
 				//GameObject.Find ("(" + i + ", 0, " + j + ")");
 				//Transform node = GameObject.Find ("(" + i + ", 0, " + j + ")").transform;
-				
-//				// X bounds checks
-//				if(i - 1 < 0)
-//				{
-//					CreateEdge (new Vector2(i, j), new Vector2(i + 1, j), true);
-//				}
-//				else if(i + 1 > gridSize.x)
-//				{
-//					CreateEdge (new Vector2(i, j), new Vector2(i - 1, j), true);
-//				}
-//				else if(i - 1 > 0 && i + 1 <= gridSize.x)
-//				{
-//					CreateEdge (new Vector2(i, j), new Vector2(i + 1, j), true);
-//					CreateEdge (new Vector2(i, j), new Vector2(i - 1, j), true);
-//				}
-//				
-//				// Y bounds checks
-//				if(j - 1 < 0)
-//				{
-//					CreateEdge (new Vector2(i, j), new Vector2(i, j + 1), true);
-//				}
-//				else if(j + 1 > gridSize.y)
-//				{
-//					CreateEdge (new Vector2(i, j), new Vector2(i, j - 1), true);
-//				}
-//				else if(j - 1 >= 0 && j + 1 <= gridSize.y)
-//				{
-//					CreateEdge (new Vector2(i, j), new Vector2(i, j + 1), true);
-//					CreateEdge (new Vector2(i, j), new Vector2(i, j - 1), true);
-//				}
 				
 				// X bounds checks
 				if(i == 0)
@@ -110,65 +85,18 @@ public class Kruskal2 : MonoBehaviour
 		ShuffleList();
 	}
 	
-	void Generate()
+	IEnumerator Generate()
 	{
-		
+		while(edges.Count > 0)
+		{
+			Algorithm ();
+			yield return new WaitForSeconds(0.0005f);
+		}
 	}
 	
 	void Algorithm()
 	{
-		while(edges.Count > 0)
-		{
-			
-		}
-	}
-	
-	void CreateEdge(Transform fromNode, Transform toNode, bool addEdgeToList = false)
-	{
-		Edge2 edge = new Edge2();
-		
-		float fromX = fromNode.position.x;
-		float fromY = fromNode.position.y;
-		float toX = toNode.position.x;
-		float toY = toNode.position.y;
-		
-		if(toX - fromX == 1)
-		{
-			edge.edgeDir = Direction.EAST;
-		}
-		else if(toX - fromX == -1)
-		{
-			edge.edgeDir = Direction.WEST;
-		}
-		if(toY - fromY == 1)
-		{
-			edge.edgeDir = Direction.NORTH;
-		}
-		else if(toY - fromY == -1)
-		{
-			edge.edgeDir = Direction.SOUTH;
-		}
-		
-		if(addEdgeToList == true)
-		{
-			edges.Add (edge);
-		}
-	}
-	
-	void RemoveEdge(Vector2 startPoint, Direction dir)
-	{
-		// Need to find the object with said startPoint and direction
-		// And remove it from the list. Used when a list is created
-		// In the opposite direction, e.g. (1, 1 going West), remove wall
-		// at (0, 1 going East)
-		
-		for(int i = 0; i < edges.Count; i++)
-		{
-			if(edges[i].originX == startPoint.x && edges[i].originY == startPoint.y && edges[i].edgeDir == dir)
-			{
-				edges.Remove(edges[i]);
-			}
-		}
+		Edge2 edge = edges[0];
 	}
 	
 	void CreateEdge(Vector2 fromPos, Vector2 toPos, bool addEdgeToList = false)
@@ -199,9 +127,27 @@ public class Kruskal2 : MonoBehaviour
 			edge.edgeDir = Direction.SOUTH;
 		}
 		
+		edge.treeID = grid[(int)fromX, (int)fromY].GetComponent<Vertices2>().vertexTreeID;
+		
 		if(addEdgeToList == true)
 		{
 			edges.Add (edge);
+		}
+	}
+	
+	void RemoveEdge(Vector2 startPoint, Direction dir)
+	{
+		// Need to find the object with said startPoint and direction
+		// And remove it from the list. Used when a list is created
+		// In the opposite direction, e.g. (1, 1 going West), remove wall
+		// at (0, 1 going East)
+		
+		for(int i = 0; i < edges.Count; i++)
+		{
+			if(edges[i].originX == startPoint.x && edges[i].originY == startPoint.y && edges[i].edgeDir == dir)
+			{
+				edges.Remove(edges[i]);
+			}
 		}
 	}
 	
@@ -217,12 +163,41 @@ public class Kruskal2 : MonoBehaviour
 		}
 	}
 	
-	void PlacePaths()
+	void PlacePath(Edge2 edge)
 	{
-		while(edges.Count > 0)
+	}
+	
+	void SetConnections(Edge2 edgeOrigin, Vector2 connectingPos, int edgeID)
+	{
+		Transform originNode = grid[(int)edgeOrigin.originX, (int)edgeOrigin.originY];
+		Transform connectingNode = grid[(int)connectingPos.x, (int)connectingPos.y];
+		
+		Vertices2 origin = originNode.GetComponent<Vertices2>();
+		origin.AddEdge(edgeOrigin, edgeOrigin.edgeDir);
+		origin.SetTreeID();
+		
+		edgeOrigin.treeID = origin.vertexTreeID;
+		
+		Vertices2 connecting = originNode.GetComponent<Vertices2>();
+			
+		connecting.vertexTreeID = origin.vertexTreeID;
+		connecting.SetTreeID();
+		
+		if(edgeOrigin.edgeDir == Direction.NORTH)
 		{
-			// Check edge direction then check the vertex in that direction, if it is part of the tree,
-			// discard that edge, otherwise place a floor piece based on that direction.
+			connecting.AddEdge(edgeOrigin, Direction.SOUTH);
+		}
+		else if(edgeOrigin.edgeDir == Direction.EAST)
+		{
+			connecting.AddEdge(edgeOrigin, Direction.WEST);
+		}
+		else if(edgeOrigin.edgeDir == Direction.SOUTH)
+		{
+			connecting.AddEdge(edgeOrigin, Direction.NORTH);
+		}
+		else if(edgeOrigin.edgeDir == Direction.WEST)
+		{
+			connecting.AddEdge(edgeOrigin, Direction.EAST);
 		}
 	}
 	
@@ -236,6 +211,11 @@ public class Kruskal2 : MonoBehaviour
 		if(GUI.Button (new Rect(0 + 10, 0 + 60, 100, 50), "Weights"))
 		{
 			Weights ();
+		}
+		
+		if(GUI.Button (new Rect(0 + 10, 0 + 110, 100, 50), "Generate"))
+		{
+			StartCoroutine("Generate");
 		}
 		
 		GUI.Box (new Rect(0 + 1, Screen.height - 100, 100, 50), edges.Count.ToString());

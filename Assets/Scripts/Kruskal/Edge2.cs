@@ -14,7 +14,7 @@ public enum Direction
 // Edge class for use within Kruskals Maze Generation
 public class Edge2
 {
-	private static int staticTreeID = 0;
+	//public static int staticTreeID = 0;
 	
 	public float originX, originY;
 	public Direction edgeDir;
@@ -25,6 +25,6 @@ public class Edge2
 		originX = -1;
 		originY = -1;
 		edgeDir = Direction.NONE;
-		treeID = ++staticTreeID;
+		treeID = -1;
 	}
 }
