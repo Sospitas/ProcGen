@@ -87,7 +87,7 @@ public class Kruskal2 : MonoBehaviour
 	
 	IEnumerator Generate()
 	{
-		//while(edges.Count > 0)
+		while(edges.Count > 0)
 		{
 			Algorithm ();
 			yield return new WaitForSeconds(0.0005f);
@@ -192,13 +192,11 @@ public class Kruskal2 : MonoBehaviour
 				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.Euler(0, 180, 0)) as Transform;
 			}
 			
-			SetConnections(edge, targetVert);
-			
 			path.parent = pathGroup;
 			
 			pathList.Add(path);
 			
-			originVert.JoinRoots(targetVert);
+			originVert.GetRoot ().JoinRoots(targetVert.GetRoot ());
 		}
 		
 		edges.Remove (edge);

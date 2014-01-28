@@ -43,8 +43,6 @@ public class Vertices2 : MonoBehaviour
 		{
 			paths[3] = edge;
 		}
-		
-		vertexTree.Add (edge.connectedVerts[1].GetComponent<Vertices2>());
 	}
 	
 	public Vertices2 GetRoot()
@@ -62,26 +60,14 @@ public class Vertices2 : MonoBehaviour
 		if(v1.treeRank < this.treeRank)
 		{
 			v1.treeRoot = this;
-			this.JoinLists(v1);
 		}
 		else
 		{
 			this.treeRoot = v1;
-			v1.JoinLists(this);
 			if(this.treeRank == v1.treeRank)
 			{
 				v1.treeRank++;
 			}
-		}
-	}
-	
-	private void JoinLists(Vertices2 v1)
-	{
-		for(int i = 0; i < v1.vertexTree.Count; i++)
-		{
-			v1.vertexTree[i].treeRoot = this;
-			this.vertexTree.Add (v1.vertexTree[i]);
-			v1.vertexTree.Remove(v1.vertexTree[i]);
 		}
 	}
 }
