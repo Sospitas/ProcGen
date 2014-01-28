@@ -3,13 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class Prim : MonoBehaviour 
-{
-	public bool generatingMaze = false;
-	public bool mazeActive = false;
+{	
+	public Transform pathGroup;
 	
-	public Transform wallGroup;
-	
-	public Transform gridNode, wall, otherWalls;
+	public Transform gridNode, path;
 	public Vector2 gridSize;
 	public Transform [,] grid;
 	
@@ -21,7 +18,7 @@ public class Prim : MonoBehaviour
 	public Queue<GameObject> mazeQueue = new Queue<GameObject>();
 	
 	public List<GameObject> mazeList = new List<GameObject>();
-	public List<GameObject> wallList = new List<GameObject>();
+	public List<GameObject> pathList = new List<GameObject>();
 	
 	private bool hasStartPoint = false;
 	private int maximumNodes;
@@ -52,20 +49,18 @@ public class Prim : MonoBehaviour
 			Destroy(t.gameObject);
 		}
 		
-		foreach(Transform t in wallGroup)
+		foreach(Transform t in pathGroup)
 		{
 			Destroy(t.gameObject);
 		}
 		
-		for(int i = 0; i < wallList.Count; i++)
+		for(int i = 0; i < pathList.Count; i++)
 		{
-			Destroy(wallList[i].gameObject);
+			Destroy(pathList[i].gameObject);
 		}
 		
 		mazeQueue.Clear();
 		mazeList.Clear ();
-		
-		generatingMaze = false;
 		
 		hasStartPoint = false;
 	}
@@ -121,10 +116,9 @@ public class Prim : MonoBehaviour
 	IEnumerator GenerateAlgorithm()
 	{
 		float startTime = Time.time;
-		generatingMaze = true;
 		while(mazeList.Count < maximumNodes)
 		{
-			PrimsAlgorithm();
+			Algorithm();
 			yield return new WaitForSeconds(0.0000f);
 			//Debug.Log (totalWeight);
 			
@@ -133,21 +127,16 @@ public class Prim : MonoBehaviour
 			generationTime = endTime - startTime;
 		}
 		
-		generatingMaze = false;
-		
 		GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
 		
 		for(int i = 0; i < walls.Length; ++i)
 		{
-			walls[i].transform.parent = wallGroup;
+			walls[i].transform.parent = pathGroup;
 		}
-		
-		Debug.Log (generationTime);
-		yield return new WaitForSeconds(0.0f);
 	}
 	
 	// Setting currentNode doesn't update it properly
-	void PrimsAlgorithm()
+	void Algorithm()
 	{
 		nextTrans = null;
 		
@@ -202,7 +191,7 @@ public class Prim : MonoBehaviour
 			// Add the node to the list of objects in the maze for checking
 			// in the next run through the loop
 			mazeList.Add(currentNode.gameObject);
-			AddWalls(treeNode, currentNode);
+			AddPaths(treeNode, currentNode);
 		}
 		//Debug.Log (currentNode.name);
 	}
@@ -291,41 +280,42 @@ public class Prim : MonoBehaviour
 	
 	// Checks against adjacent blocks to get rotation for wall
 	// Wall spawns at position x, with pivot at edge of wall
-	void AddWalls(Transform last, Transform current)
+	void AddPaths(Transform last, Transform current)
 	{
-		Transform nextWall = null;
+		Transform nextPath = null;
 		
 		if(last.position.z < current.position.z)
 		{
-			nextWall = Instantiate(wall, last.position, Quaternion.Euler(0, -90, 0)) as Transform;
+			nextPath = Instantiate(path, last.position, Quaternion.Euler(0, -90, 0)) as Transform;
 		}
 		if(last.position.x < current.position.x)
 		{
-			nextWall = Instantiate (wall, last.position, Quaternion.identity) as Transform;
+			nextPath = Instantiate (path, last.position, Quaternion.identity) as Transform;
 		}
 		if(last.position.z > current.position.z)
 		{
-			nextWall = Instantiate(wall, last.position, Quaternion.Euler(0, 90, 0)) as Transform;
+			nextPath = Instantiate(path, last.position, Quaternion.Euler(0, 90, 0)) as Transform;
 		}
 		if(last.position.x > current.position.x)
 		{
-			nextWall = Instantiate (wall, last.position, Quaternion.Euler(0, 180, 0)) as Transform;
+			nextPath = Instantiate (path, last.position, Quaternion.Euler(0, 180, 0)) as Transform;
 		}
 		
-		if(nextWall != null)
+		if(nextPath != null)
 		{
-			wallList.Add(nextWall.gameObject);
+			nextPath.parent = pathGroup;
+			pathList.Add(nextPath.gameObject);
 		}
 	}
 	
 	void ShowStartAndEnd()
 	{
-		Transform start = wallList[0].transform;
+		Transform start = pathList[0].transform;
 		start.gameObject.renderer.enabled = true;
 		start.gameObject.transform.position += new Vector3(0.0f, 0.2f, 0.0f);
 		start.gameObject.renderer.material.color = Color.yellow;
 		
-		Transform end = wallList[wallList.Count - 1].transform;
+		Transform end = pathList[pathList.Count - 1].transform;
 		end.gameObject.renderer.enabled = true;
 		end.gameObject.transform.position += new Vector3(0.0f, 0.2f, 0.0f);
 		end.gameObject.renderer.material.color = Color.green;
@@ -350,10 +340,7 @@ public class Prim : MonoBehaviour
 	{
 		if(GUI.Button(new Rect(0 + 10, 0 + 10, 100, 50), "Generate"))
 		{
-			if(mazeActive == false)
-			{
-				GenerateGrid ();
-			}
+			GenerateGrid ();
 		}
 		
 		if(GUI.Button (new Rect(0 + 10, 0 + 60, 100, 50), "AdjWeights"))
@@ -371,10 +358,7 @@ public class Prim : MonoBehaviour
 		
 		if(GUI.Button(new Rect(0 + 10, 0 + 160, 100, 50), "GenerateMaze"))
 		{
-			if(generatingMaze == false)
-			{
-				StartCoroutine(GenerateAlgorithm());
-			}
+			StartCoroutine(GenerateAlgorithm());
 		}
 		
 		if(GUI.Button(new Rect(0 + 10, 0 + 210, 100, 50), "Delete"))
