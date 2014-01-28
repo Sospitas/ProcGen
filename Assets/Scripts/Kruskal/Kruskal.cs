@@ -14,6 +14,8 @@ public class Kruskal : MonoBehaviour
 	
 	public List<Edge> edges = new List<Edge>();
 	
+	private float generationTime = 0.0f;
+	
 	void Start()
 	{
 		//grid.Clear();
@@ -39,6 +41,77 @@ public class Kruskal : MonoBehaviour
 				grid[i, j] = node;
 			}
 		}
+	}
+	
+	IEnumerator Generate()
+	{
+		float startTime = Time.time;
+		while(edges.Count > 0)
+		{
+			Algorithm ();
+			yield return new WaitForSeconds(0.0005f);
+			
+			float endTime = Time.time;
+			generationTime = endTime - startTime;
+		}
+	}
+	
+	void Algorithm()
+	{
+		Edge edge = edges[0];
+		PlacePath (edge);
+	}
+	
+	void DeleteGrid()
+	{
+		foreach(Transform trans in this.transform)
+		{
+			Destroy (trans.gameObject);
+		}
+		
+		foreach(Transform t in pathGroup)
+		{
+			Destroy(t.gameObject);
+		}
+		
+		pathList.Clear();
+	}
+	
+	void CreateEdge(Vector2 fromPos, Vector2 toPos, bool addEdgeToList = false)
+	{
+		Edge edge = new Edge();
+		edge.originX = fromPos.x;
+		edge.originY = fromPos.y;
+		
+		float fromX = fromPos.x;
+		float fromY = fromPos.y;
+		float toX = toPos.x;
+		float toY = toPos.y;
+		
+		if(toX - fromX == 1)
+		{
+			edge.edgeDir = Direction.EAST;
+		}
+		else if(toX - fromX == -1)
+		{
+			edge.edgeDir = Direction.WEST;
+		}
+		if(toY - fromY == 1)
+		{
+			edge.edgeDir = Direction.NORTH;
+		}
+		else if(toY - fromY == -1)
+		{
+			edge.edgeDir = Direction.SOUTH;
+		}
+		
+		if(addEdgeToList == true)
+		{
+			edges.Add (edge);
+		}
+		
+		edge.connectedVerts[0] = grid[(int)fromX, (int)fromY].GetComponent<Vertices>();
+		edge.connectedVerts[1] = grid[(int)toX, (int)toY].GetComponent<Vertices>();
 	}
 	
 	void CreateEdges()
@@ -83,58 +156,6 @@ public class Kruskal : MonoBehaviour
 		}
 		
 		ShuffleList();
-	}
-	
-	IEnumerator Generate()
-	{
-		while(edges.Count > 0)
-		{
-			Algorithm ();
-			yield return new WaitForSeconds(0.0005f);
-		}
-	}
-	
-	void Algorithm()
-	{
-		Edge edge = edges[0];
-		PlacePath (edge);
-	}
-	
-	void CreateEdge(Vector2 fromPos, Vector2 toPos, bool addEdgeToList = false)
-	{
-		Edge edge = new Edge();
-		edge.originX = fromPos.x;
-		edge.originY = fromPos.y;
-		
-		float fromX = fromPos.x;
-		float fromY = fromPos.y;
-		float toX = toPos.x;
-		float toY = toPos.y;
-		
-		if(toX - fromX == 1)
-		{
-			edge.edgeDir = Direction.EAST;
-		}
-		else if(toX - fromX == -1)
-		{
-			edge.edgeDir = Direction.WEST;
-		}
-		if(toY - fromY == 1)
-		{
-			edge.edgeDir = Direction.NORTH;
-		}
-		else if(toY - fromY == -1)
-		{
-			edge.edgeDir = Direction.SOUTH;
-		}
-		
-		if(addEdgeToList == true)
-		{
-			edges.Add (edge);
-		}
-		
-		edge.connectedVerts[0] = grid[(int)fromX, (int)fromY].GetComponent<Vertices>();
-		edge.connectedVerts[1] = grid[(int)toX, (int)toY].GetComponent<Vertices>();
 	}
 	
 	void ShuffleList()
@@ -203,6 +224,14 @@ public class Kruskal : MonoBehaviour
 			StartCoroutine("Generate");
 		}
 		
+		if(GUI.Button (new Rect(0 + 10, 0 + 160, 100, 50), "Delete"))
+		{
+			DeleteGrid();
+			generationTime = 0;
+		}
+		
 		GUI.Box (new Rect(0 + 1, Screen.height - 100, 100, 50), edges.Count.ToString());
+		
+		GUI.Box(new Rect(Screen.width/2 - 250, 0 + 10, 200, 50), "Generation Time: \n" + generationTime.ToString("f2"));
 	}
 }

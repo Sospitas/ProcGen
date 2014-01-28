@@ -12,11 +12,6 @@ public class Prim : MonoBehaviour
 	
 	public Transform lastNode, currentNode, treeNode;
 	
-	// Queue used to store all nodes that have been added to the tree
-	// When all nodes are added, this then iterates through and deletes
-	// all objects as it traces through the maze
-	public Queue<GameObject> mazeQueue = new Queue<GameObject>();
-	
 	public List<GameObject> mazeList = new List<GameObject>();
 	public List<GameObject> pathList = new List<GameObject>();
 	
@@ -40,34 +35,9 @@ public class Prim : MonoBehaviour
 		generationTime = 0;
 	}
 	
-	// Delete the grid if something goes wrong. Iterates through children
-	// of this transform and deletes them all
-	void DeleteGrid()
-	{		
-		foreach(Transform t in grid)
-		{
-			Destroy(t.gameObject);
-		}
-		
-		foreach(Transform t in pathGroup)
-		{
-			Destroy(t.gameObject);
-		}
-		
-		for(int i = 0; i < pathList.Count; i++)
-		{
-			Destroy(pathList[i].gameObject);
-		}
-		
-		mazeQueue.Clear();
-		mazeList.Clear ();
-		
-		hasStartPoint = false;
-	}
-	
 	// Generates the grid by instantiating a load of cubes
 	// in a 2 dimensional grid
-	void GenerateGrid()
+	void SetupGrid()
 	{
 		// Set the camera at a height/position where it can see all of the generated grid
 		Camera.main.transform.position = new Vector3(gridSize.x/2, gridSize.x, gridSize.y/2);
@@ -90,48 +60,16 @@ public class Prim : MonoBehaviour
 		}
 	}
 	
-	// Selects a random node in the grid to start the maze from
-	void SelectStartingPoint()
-	{
-		int x = Random.Range (0, (int)gridSize.x);
-		int z = Random.Range (0, (int)gridSize.y);
-		
-		Transform startNode = GameObject.Find ("(" + x + ", 0, " + z + ")").transform;
-		
-		mazeQueue.Enqueue(GameObject.Find ("(" + x + ", 0, " + z + ")"));
-		
-		startNode.renderer.material.color = Color.red;
-		
-		currentNode = startNode;
-		
-		currentNode.GetComponent<NodeWeights>().hasBeenVisited = true;
-		
-		totalWeight += startNode.GetComponent<NodeWeights>().weight;
-			
-		hasStartPoint = true;
-		
-		mazeList.Add(currentNode.gameObject);
-	}
-	
-	IEnumerator GenerateAlgorithm()
+	IEnumerator Generate()
 	{
 		float startTime = Time.time;
 		while(mazeList.Count < maximumNodes)
 		{
 			Algorithm();
-			yield return new WaitForSeconds(0.0000f);
-			//Debug.Log (totalWeight);
+			yield return new WaitForSeconds(0.0005f);
 			
 			float endTime = Time.time;
-		
 			generationTime = endTime - startTime;
-		}
-		
-		GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
-		
-		for(int i = 0; i < walls.Length; ++i)
-		{
-			walls[i].transform.parent = pathGroup;
 		}
 	}
 	
@@ -194,6 +132,52 @@ public class Prim : MonoBehaviour
 			AddPaths(treeNode, currentNode);
 		}
 		//Debug.Log (currentNode.name);
+	}
+	
+	// Delete the grid if something goes wrong. Iterates through children
+	// of this transform and deletes them all
+	void DeleteGrid()
+	{		
+		foreach(Transform t in grid)
+		{
+			Destroy(t.gameObject);
+		}
+		
+		foreach(Transform t in pathGroup)
+		{
+			Destroy(t.gameObject);
+		}
+		
+		for(int i = 0; i < pathList.Count; i++)
+		{
+			Destroy(pathList[i].gameObject);
+		}
+		
+		mazeList.Clear ();
+		
+		hasStartPoint = false;
+	}
+	
+	// Selects a random node in the grid to start the maze from
+	void SelectStartingPoint()
+	{
+		int x = Random.Range (0, (int)gridSize.x - 1);
+		int z = Random.Range (0, (int)gridSize.y - 1);
+		
+		//Transform startNode = GameObject.Find ("(" + x + ", 0, " + z + ")").transform;
+		Transform startNode = grid[x, z];
+		
+		startNode.renderer.material.color = Color.red;
+		
+		currentNode = startNode;
+		
+		currentNode.GetComponent<NodeWeights>().hasBeenVisited = true;
+		
+		totalWeight += startNode.GetComponent<NodeWeights>().weight;
+			
+		hasStartPoint = true;
+		
+		mazeList.Add(currentNode.gameObject);
 	}
 	
 	// Gets all adjacent nodes and adjacent weights
@@ -328,27 +312,19 @@ public class Prim : MonoBehaviour
 		}
 	}
 	
-	void PrintQueue()
-	{
-		for(int i = 0; i < mazeQueue.Count; ++i)
-		{
-			Debug.Log("Item: " + i.ToString() + mazeQueue.Dequeue().name);
-		}
-	}
-	
 	void OnGUI()
 	{
-		if(GUI.Button(new Rect(0 + 10, 0 + 10, 100, 50), "Generate"))
+		if(GUI.Button(new Rect(Screen.width - 110, 0 + 10, 100, 50), "Generate"))
 		{
-			GenerateGrid ();
+			SetupGrid ();
 		}
 		
-		if(GUI.Button (new Rect(0 + 10, 0 + 60, 100, 50), "AdjWeights"))
+		if(GUI.Button (new Rect(Screen.width - 110, 0 + 60, 100, 50), "AdjWeights"))
 		{
 			GetAdjacentWeights();
 		}
 		
-		if(GUI.Button(new Rect(0 + 10, 0 + 110, 100, 50), "StartPoint"))
+		if(GUI.Button(new Rect(Screen.width - 110, 0 + 110, 100, 50), "StartPoint"))
 		{
 			if(hasStartPoint == false)
 			{
@@ -356,26 +332,22 @@ public class Prim : MonoBehaviour
 			}
 		}
 		
-		if(GUI.Button(new Rect(0 + 10, 0 + 160, 100, 50), "GenerateMaze"))
+		if(GUI.Button(new Rect(Screen.width - 110, 0 + 160, 100, 50), "GenerateMaze"))
 		{
-			StartCoroutine(GenerateAlgorithm());
+			StartCoroutine("Generate");
 		}
 		
-		if(GUI.Button(new Rect(0 + 10, 0 + 210, 100, 50), "Delete"))
+		if(GUI.Button(new Rect(Screen.width - 110, 0 + 210, 100, 50), "Delete"))
 		{
 			DeleteGrid();
+			generationTime = 0;
 		}
 		
-		if(GUI.Button (new Rect(Screen.width - 110, 0 + 10, 100, 50), "Print Queue"))
-		{
-			PrintQueue();
-		}
+//		if(GUI.Button (new Rect(Screen.width - 110, 0 + 260, 100, 50), "Show Start/End"))
+//		{
+//			ShowStartAndEnd();
+//		}
 		
-		if(GUI.Button (new Rect(Screen.width - 110, 0 + 60, 100, 50), "Show Start/End"))
-		{
-			ShowStartAndEnd();
-		}
-		
-		GUI.Box(new Rect(Screen.width/2 - 100, 0 + 10, 200, 50), "Generation Time: \n" + generationTime.ToString("f2"));
+		GUI.Box(new Rect(Screen.width/2 + 50, 0 + 10, 200, 50), "Generation Time: \n" + generationTime.ToString("f2"));
 	}
 }
