@@ -87,7 +87,7 @@ public class Kruskal2 : MonoBehaviour
 	
 	IEnumerator Generate()
 	{
-		while(edges.Count > 0)
+		//while(edges.Count > 0)
 		{
 			Algorithm ();
 			yield return new WaitForSeconds(0.0005f);
@@ -97,6 +97,7 @@ public class Kruskal2 : MonoBehaviour
 	void Algorithm()
 	{
 		Edge2 edge = edges[0];
+		PlacePath (edge);
 	}
 	
 	void CreateEdge(Vector2 fromPos, Vector2 toPos, bool addEdgeToList = false)
@@ -127,12 +128,13 @@ public class Kruskal2 : MonoBehaviour
 			edge.edgeDir = Direction.SOUTH;
 		}
 		
-		edge.treeID = grid[(int)fromX, (int)fromY].GetComponent<Vertices2>().vertexTreeID;
-		
 		if(addEdgeToList == true)
 		{
 			edges.Add (edge);
 		}
+		
+		edge.connectedVerts[0] = grid[(int)fromX, (int)fromY].GetComponent<Vertices2>();
+		edge.connectedVerts[1] = grid[(int)toX, (int)toY].GetComponent<Vertices2>();
 	}
 	
 	void RemoveEdge(Vector2 startPoint, Direction dir)
@@ -165,39 +167,60 @@ public class Kruskal2 : MonoBehaviour
 	
 	void PlacePath(Edge2 edge)
 	{
+		Transform path;
+		path = null;
+		
+		Vertices2 originVert = edge.connectedVerts[0];
+		Vertices2 targetVert = edge.connectedVerts[1];
+		
+		if(targetVert.GetRoot () != originVert.GetRoot())
+		{
+			if(edge.edgeDir == Direction.NORTH)
+			{
+				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.Euler(0, -90, 0)) as Transform;
+			}
+			if(edge.edgeDir == Direction.EAST)
+			{
+				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.identity) as Transform;
+			}
+			if(edge.edgeDir == Direction.SOUTH)
+			{
+				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.Euler(0, 90, 0)) as Transform;
+			}
+			if(edge.edgeDir == Direction.WEST)
+			{
+				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.Euler(0, 180, 0)) as Transform;
+			}
+			
+			SetConnections(edge, targetVert);
+			
+			path.parent = pathGroup;
+			
+			pathList.Add(path);
+			
+			originVert.JoinRoots(targetVert);
+		}
+		
+		edges.Remove (edge);
 	}
 	
-	void SetConnections(Edge2 edgeOrigin, Vector2 connectingPos, int edgeID)
+	void SetConnections(Edge2 edgeOrigin, Vertices2 targetConnect)
 	{
-		Transform originNode = grid[(int)edgeOrigin.originX, (int)edgeOrigin.originY];
-		Transform connectingNode = grid[(int)connectingPos.x, (int)connectingPos.y];
-		
-		Vertices2 origin = originNode.GetComponent<Vertices2>();
-		origin.AddEdge(edgeOrigin, edgeOrigin.edgeDir);
-		origin.SetTreeID();
-		
-		edgeOrigin.treeID = origin.vertexTreeID;
-		
-		Vertices2 connecting = originNode.GetComponent<Vertices2>();
-			
-		connecting.vertexTreeID = origin.vertexTreeID;
-		connecting.SetTreeID();
-		
 		if(edgeOrigin.edgeDir == Direction.NORTH)
 		{
-			connecting.AddEdge(edgeOrigin, Direction.SOUTH);
+			targetConnect.AddEdge(edgeOrigin, Direction.SOUTH);
 		}
 		else if(edgeOrigin.edgeDir == Direction.EAST)
 		{
-			connecting.AddEdge(edgeOrigin, Direction.WEST);
+			targetConnect.AddEdge(edgeOrigin, Direction.WEST);
 		}
 		else if(edgeOrigin.edgeDir == Direction.SOUTH)
 		{
-			connecting.AddEdge(edgeOrigin, Direction.NORTH);
+			targetConnect.AddEdge(edgeOrigin, Direction.NORTH);
 		}
 		else if(edgeOrigin.edgeDir == Direction.WEST)
 		{
-			connecting.AddEdge(edgeOrigin, Direction.EAST);
+			targetConnect.AddEdge(edgeOrigin, Direction.EAST);
 		}
 	}
 	

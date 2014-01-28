@@ -19,6 +19,7 @@ public class Edge2
 	public float originX, originY;
 	public Direction edgeDir;
 	public int treeID;
+	public Vertices2[] connectedVerts;
 	
 	public Edge2()
 	{
@@ -26,5 +27,6 @@ public class Edge2
 		originY = -1;
 		edgeDir = Direction.NONE;
 		treeID = -1;
+		connectedVerts = new Vertices2[2];
 	}
 }

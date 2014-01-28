@@ -1,17 +1,24 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Vertices2 : MonoBehaviour
 {
 	private static int staticTreeID = 0;
 	
 	public Edge2[] paths;
-	public int vertexTreeID;
+	public List<Vertices2> vertexTree = new List<Vertices2>();
+	
+	public int treeRank;
+	public Vertices2 treeRoot;
 	
 	void Start () 
 	{
-		vertexTreeID = ++staticTreeID;
+		vertexTree.Clear();
 		paths = new Edge2[4];
+		
+		treeRank = 0;
+		this.treeRoot = this;
 	}
 	
 	public void AddEdge(Edge2 edge, Direction dir)
@@ -36,16 +43,45 @@ public class Vertices2 : MonoBehaviour
 		{
 			paths[3] = edge;
 		}
+		
+		vertexTree.Add (edge.connectedVerts[1].GetComponent<Vertices2>());
 	}
 	
-	public void SetTreeID()
+	public Vertices2 GetRoot()
 	{
-		for(int i = 0; i < paths.Length; ++i)
+		if(this.treeRoot != this)
 		{
-			if(paths[i] != null)
+			this.treeRoot = this.treeRoot.GetRoot();
+		}
+		
+		return this.treeRoot;
+	}
+	
+	public void JoinRoots(Vertices2 v1)
+	{
+		if(v1.treeRank < this.treeRank)
+		{
+			v1.treeRoot = this;
+			this.JoinLists(v1);
+		}
+		else
+		{
+			this.treeRoot = v1;
+			v1.JoinLists(this);
+			if(this.treeRank == v1.treeRank)
 			{
-				paths[i].treeID = vertexTreeID;
+				v1.treeRank++;
 			}
+		}
+	}
+	
+	private void JoinLists(Vertices2 v1)
+	{
+		for(int i = 0; i < v1.vertexTree.Count; i++)
+		{
+			v1.vertexTree[i].treeRoot = this;
+			this.vertexTree.Add (v1.vertexTree[i]);
+			v1.vertexTree.Remove(v1.vertexTree[i]);
 		}
 	}
 }
