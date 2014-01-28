@@ -1,155 +1,88 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
-public class Kruskal : MonoBehaviour
-{
-	// List to store all of the edges
+public class Kruskal : MonoBehaviour 
+{	
+	public Vector2 gridSize;
+	public Transform gridNode;
+	public Transform pathPrefab, pathGroup;
+	
+	//public List<Transform> grid = new List<Transform>();
+	public Transform[,] grid;
+	public List<Transform> pathList = new List<Transform>();
+	
 	public List<Edge> edges = new List<Edge>();
 	
-	public Vector2 gridSize;
-	
-	public bool generatingMaze = false;
-	
-	public Transform wallGroup;
-	public Transform gridNode, wall;
-	public Transform [,] grid;
-	
-	public Transform lastVertex, currentVertex;
-	
-	public List<GameObject> mazeList = new List<GameObject>();
-	public List<GameObject> wallList = new List<GameObject>();
-	
-	public List<int> edgeWeightsInt = new List<int>();
-	
-	private static int treeID;
-	
-	// Time taken to generate the maze
-	private float generationTime;
-
-	// Use this for initialization
-	void Start ()
+	void Start()
 	{
+		//grid.Clear();
 		grid = new Transform[(int)gridSize.x, (int)gridSize.y];
-		lastVertex = currentVertex = null;
-		mazeList.Clear();
-		wallList.Clear();
 		edges.Clear();
-		generationTime = 0.0f;
-		treeID = 0;
+		pathList.Clear();
 	}
 	
-	void Setup()
+	void SetupGrid()
 	{
 		// Set the camera at a height/position where it can see all of the generated grid
 		Camera.main.transform.position = new Vector3(gridSize.x/2, gridSize.x, gridSize.y/2);
 		Camera.main.orthographicSize = ((gridSize.x + gridSize.y)/2)/1.8f;
 		
-		// Iterate through the gridSizes
 		for(int i = 0; i < gridSize.x; ++i)
 		{
 			for(int j = 0; j < gridSize.y; ++j)
 			{
-				// Create a grid cube/node at each of the points
 				Transform node;
-				node = Instantiate (gridNode, new Vector3(i, 0, j), Quaternion.identity) as Transform;
-				node.GetComponent<Vertices>().treeID = treeID;
-				treeID++;
-				// Set the cube/nodes parent/name for grouping/easy recognition
+				node = Instantiate(gridNode, new Vector3(i, 0, j), Quaternion.identity) as Transform;
 				node.parent = this.transform;
-				node.name = "(" + i + ", 0, " + j + ")";
-				
+				node.name = node.name = "(" + i + ", 0, " + j + ")";
 				grid[i, j] = node;
 			}
 		}
 	}
 	
-	void Weights()
+	void CreateEdges()
 	{
-		Vertices verts;
-		
 		for(int i = 0; i < gridSize.x; ++i)
 		{
 			for(int j = 0; j < gridSize.y; ++j)
 			{
-				Transform node;
-				node = grid[i, j];
+				//GameObject.Find ("(" + i + ", 0, " + j + ")");
+				//Transform node = GameObject.Find ("(" + i + ", 0, " + j + ")").transform;
 				
-				verts = node.GetComponent<Vertices>();
-				
-				// Adjacent nodes are stored as shown below
-				
-				///////////[0]////////////
-				////////[3][x][1]/////////
-				///////////[2]////////////
-				
-				////// Up = Position j, Down = Negative j
-				////// Right = Positive i, Left = Negative i
-				if(i - 1 >= 0 && i + 1 <= gridSize.x)
+				// X bounds checks
+				if(i == 0)
 				{
-					verts.adjNode[1] = grid[i, j];
-					verts.adjNode[3] = grid[i - 1, j];
-					verts.connectedNodes[1] = grid[i, j];
-					verts.connectedNodes[3] = grid[i - 1, j];
-					
-					CreateEdge(node, verts.adjNode[1], false);
-					CreateEdge(node, verts.adjNode[3], true);
+					CreateEdge (new Vector2(i, j), new Vector2(i + 1, j), true);
 				}
-				else if(i - 1 < 0)
+				else if(i == gridSize.x - 1)
 				{
-					verts.adjNode[1] = grid[i + 1, j];
-					verts.adjNode[3] = null;
-					
-					verts.connectedNodes[1] = grid[i + 1, j];
-					verts.connectedNodes[3] = null;
-					
-					CreateEdge(node, verts.adjNode[1], true);
+					CreateEdge (new Vector2(i, j), new Vector2(i - 1, j), true);
 				}
-				else if(i + 1 > gridSize.x)
+				else if(i > 0 && i < gridSize.x - 1)
 				{
-					verts.adjNode[1] = null;
-					verts.adjNode[3] = grid[i - 1, j];
-					verts.connectedNodes[1] = null;
-					verts.connectedNodes[3] = grid[i - 1, j];
-					
-					CreateEdge(node, verts.adjNode[3], false);					
+					CreateEdge (new Vector2(i, j), new Vector2(i + 1, j), true);
+					CreateEdge (new Vector2(i, j), new Vector2(i - 1, j), true);
 				}
 				
-				if(j - 1 >= 0 && j + 1 < gridSize.y)
+				// Y bounds checks
+				if(j == 0)
 				{
-					verts.adjNode[0] = grid[i, j + 1];
-					verts.adjNode[2] = grid[i, j - 1];
-					verts.connectedNodes[0] = grid[i, j + 1];
-					verts.connectedNodes[2] = grid[i, j - 1];
-					
-					CreateEdge (node, verts.adjNode[0], true);
-					CreateEdge(node, verts.adjNode[2], false);
+					CreateEdge (new Vector2(i, j), new Vector2(i, j + 1), true);
 				}
-				else if(j - 1 < 0)
+				else if(j == gridSize.y - 1)
 				{
-					verts.adjNode[0] = grid[i, j + 1];
-					verts.adjNode[2] = null;
-					verts.connectedNodes[0] = grid[i, j + 1];
-					verts.connectedNodes[2] = null;
-					
-					CreateEdge (node, verts.adjNode[0], true);
-						
+					CreateEdge (new Vector2(i, j), new Vector2(i, j - 1), true);
 				}
-				else if(j + 1 > gridSize.y)
+				else if(j > 0 && j < gridSize.y - 1)
 				{
-					verts.adjNode[0] = null;
-					verts.adjNode[2] = grid[i, j - 1];
-					verts.connectedNodes[0] = null;
-					verts.connectedNodes[2] = grid[i, j - 1];
-					
-					CreateEdge(node, verts.adjNode[2], false);
+					CreateEdge (new Vector2(i, j), new Vector2(i, j + 1), true);
+					CreateEdge (new Vector2(i, j), new Vector2(i, j - 1), true);
 				}
 			}
 		}
 		
-		edges = edges.OrderBy(o=>o.edgeWeight).ToList();
-
+		ShuffleList();
 	}
 	
 	IEnumerator Generate()
@@ -163,96 +96,106 @@ public class Kruskal : MonoBehaviour
 	
 	void Algorithm()
 	{
-		Transform nextWall = null;
+		Edge edge = edges[0];
+		PlacePath (edge);
+	}
+	
+	void CreateEdge(Vector2 fromPos, Vector2 toPos, bool addEdgeToList = false)
+	{
+		Edge edge = new Edge();
+		edge.originX = fromPos.x;
+		edge.originY = fromPos.y;
 		
-		Edge edge = edges.First();
+		float fromX = fromPos.x;
+		float fromY = fromPos.y;
+		float toX = toPos.x;
+		float toY = toPos.y;
 		
-		if(edge.fromID == edge.toID)
+		if(toX - fromX == 1)
 		{
-			edges.Remove (edge);
-			return;
+			edge.edgeDir = Direction.EAST;
 		}
-		else if(edge.fromID != edge.toID)
+		else if(toX - fromX == -1)
 		{
-			int treeID1 = edge.toID;
+			edge.edgeDir = Direction.WEST;
+		}
+		if(toY - fromY == 1)
+		{
+			edge.edgeDir = Direction.NORTH;
+		}
+		else if(toY - fromY == -1)
+		{
+			edge.edgeDir = Direction.SOUTH;
+		}
+		
+		if(addEdgeToList == true)
+		{
+			edges.Add (edge);
+		}
+		
+		edge.connectedVerts[0] = grid[(int)fromX, (int)fromY].GetComponent<Vertices>();
+		edge.connectedVerts[1] = grid[(int)toX, (int)toY].GetComponent<Vertices>();
+	}
+	
+	void ShuffleList()
+	{		
+		for(int i = edges.Count; i > 1; --i)
+		{
+			int rnd = Random.Range (0, i);
 			
-			for(int i = 0; i < gridSize.x; ++i)
+			Edge tmp = edges[rnd];
+			edges[rnd] = edges[i - 1];
+			edges[i - 1] = tmp;
+		}
+	}
+	
+	void PlacePath(Edge edge)
+	{
+		Transform path;
+		path = null;
+		
+		Vertices originVert = edge.connectedVerts[0];
+		Vertices targetVert = edge.connectedVerts[1];
+		
+		if(targetVert.GetRoot () != originVert.GetRoot())
+		{
+			if(edge.edgeDir == Direction.NORTH)
 			{
-				for(int j = 0; j < gridSize.y; ++j)
-				{
-					Transform node = grid[i, j];
-					if(node.GetComponent<Vertices>().treeID == treeID1)
-					{
-						node.GetComponent<Vertices>().treeID = edge.fromID;
-					}
-				}
+				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.Euler(0, -90, 0)) as Transform;
+			}
+			if(edge.edgeDir == Direction.EAST)
+			{
+				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.identity) as Transform;
+			}
+			if(edge.edgeDir == Direction.SOUTH)
+			{
+				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.Euler(0, 90, 0)) as Transform;
+			}
+			if(edge.edgeDir == Direction.WEST)
+			{
+				path = Instantiate(pathPrefab, new Vector3(edge.originX, 0, edge.originY), Quaternion.Euler(0, 180, 0)) as Transform;
 			}
 			
-			Vector3 wallPos = new Vector3(edge.fromX, 0, edge.fromY);
-			// Spawn Walls
-			if(edge.fromX - edge.toX == -1)
-			{
-				nextWall = Instantiate (wall, wallPos, Quaternion.identity) as Transform;
-				// Set both tree ID's to the same value
-				edge.toID = edge.fromID;
-			}
-			else if(edge.fromX - edge.toX == 1)
-			{
-				nextWall = Instantiate (wall, wallPos, Quaternion.Euler(0, 180, 0)) as Transform;
-				// Set both tree ID's to the same value
-				edge.toID = edge.fromID;
-			}
-			else if(edge.fromY - edge.toY == -1)
-			{
-				nextWall = Instantiate (wall, wallPos, Quaternion.Euler(0, -90, 0)) as Transform;
-				// Set both tree ID's to the same value
-				edge.toID = edge.fromID;
-			}
-			else if(edge.fromY - edge.toY == 1)
-			{
-				nextWall = Instantiate (wall, wallPos, Quaternion.Euler(0, 90, 0)) as Transform;
-				// Set both tree ID's to the same value
-				edge.toID = edge.fromID;
-			}
-			else
-			{
-				Destroy (nextWall);
-				nextWall = null;
-			}
+			path.parent = pathGroup;
+			
+			pathList.Add(path);
+			
+			originVert.GetRoot ().JoinRoots(targetVert.GetRoot ());
 		}
 		
 		edges.Remove (edge);
-		
-		if(nextWall != null)
-		{
-			nextWall.parent = wallGroup;
-			wallList.Add(nextWall.gameObject);
-		}
-		
-		Debug.Log (edges.Count);
-	}
-	
-	void ShowStartAndEnd()
-	{
-//		firstNode.renderer.material.color = Color.yellow;
-//		firstNode.transform.position += new Vector3(0, 0.1f, 0);
-//		lastNode.renderer.material.color = Color.green;
-//		lastNode.transform.position += new Vector3(0, 0.1f, 0);
 	}
 	
 	void OnGUI()
 	{
 		if(GUI.Button(new Rect(0 + 10, 0 + 10, 100, 50), "Setup"))
 		{
-			if(generatingMaze == false)
-			{
-				Setup ();
-			}
+			SetupGrid ();
 		}
 		
 		if(GUI.Button (new Rect(0 + 10, 0 + 60, 100, 50), "Weights"))
 		{
-			Weights ();
+			CreateEdges ();
 		}
 		
 		if(GUI.Button (new Rect(0 + 10, 0 + 110, 100, 50), "Generate"))
@@ -260,26 +203,6 @@ public class Kruskal : MonoBehaviour
 			StartCoroutine("Generate");
 		}
 		
-		if(GUI.Button (new Rect(Screen.width - 110, 0 + 60, 100, 50), "Show Start/End"))
-		{
-			ShowStartAndEnd();
-		}
-	}
-
-	void CreateEdge(Transform fromNode, Transform toNode, bool addEdge)
-	{
-		//Edge edge = new Edge();
-		Edge edge = ScriptableObject.CreateInstance("Edge") as Edge;
-		if(edge.SetConnectingNodes(fromNode, toNode) == false)
-		{
-			edges.Remove (edge);
-		}
-		else
-		{	
-			if(addEdge)
-			{
-				edges.Add (edge);
-			}
-		}
+		GUI.Box (new Rect(0 + 1, Screen.height - 100, 100, 50), edges.Count.ToString());
 	}
 }

@@ -2,22 +2,40 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class Vertices : MonoBehaviour 
+public class Vertices : MonoBehaviour
 {
-	public int treeID;
-	public Transform[] adjNode = new Transform[4];
-	public Transform[] connectedNodes = new Transform[4];
-	public int[] edgeWeights = new int[4];
+	public int treeRank;
+	public Vertices treeRoot;
 	
-	public void SetAdjWeight(int i)
+	void Start () 
+	{		
+		treeRank = 0;
+		this.treeRoot = this;
+	}
+	
+	public Vertices GetRoot()
 	{
-		if(adjNode[i] != null)
+		if(this.treeRoot != this)
 		{
-			//edgeWeights[i] = adjNode[i].GetComponent<Vertices>().weight;
+			this.treeRoot = this.treeRoot.GetRoot();
+		}
+		
+		return this.treeRoot;
+	}
+	
+	public void JoinRoots(Vertices v1)
+	{
+		if(v1.treeRank < this.treeRank)
+		{
+			v1.treeRoot = this;
 		}
 		else
 		{
-			edgeWeights[i] = -1;
+			this.treeRoot = v1;
+			if(this.treeRank == v1.treeRank)
+			{
+				v1.treeRank++;
+			}
 		}
 	}
 }

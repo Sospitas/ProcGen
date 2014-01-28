@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class GridGeneration : MonoBehaviour 
+public class Prim : MonoBehaviour 
 {
 	public bool generatingMaze = false;
 	public bool mazeActive = false;
@@ -47,27 +47,25 @@ public class GridGeneration : MonoBehaviour
 	// of this transform and deletes them all
 	void DeleteGrid()
 	{		
-		if(this.transform.childCount != 0)
-		{			
-			List<GameObject> childrenToDelete = new List<GameObject>();
-			foreach(Transform child in transform)
-			{
-				childrenToDelete.Add(child.gameObject);
-			}
-			
-			childrenToDelete.ForEach(child => Destroy (child));
-		}
-		
-		List<GameObject> wallToDelete = new List<GameObject>();
-		foreach(Transform childWall in wallGroup)
+		foreach(Transform t in grid)
 		{
-			wallToDelete.Add(childWall.gameObject);
+			Destroy(t.gameObject);
 		}
 		
-		wallToDelete.ForEach(childWall => Destroy(childWall));
+		foreach(Transform t in wallGroup)
+		{
+			Destroy(t.gameObject);
+		}
+		
+		for(int i = 0; i < wallList.Count; i++)
+		{
+			Destroy(wallList[i].gameObject);
+		}
 		
 		mazeQueue.Clear();
 		mazeList.Clear ();
+		
+		generatingMaze = false;
 		
 		hasStartPoint = false;
 	}
@@ -127,20 +125,13 @@ public class GridGeneration : MonoBehaviour
 		while(mazeList.Count < maximumNodes)
 		{
 			PrimsAlgorithm();
-			yield return new WaitForSeconds(0.0005f);
+			yield return new WaitForSeconds(0.0000f);
 			//Debug.Log (totalWeight);
 			
 			float endTime = Time.time;
 		
 			generationTime = endTime - startTime;
 		}
-		
-//		if(mazeList.Count == maximumNodes)
-//		{
-//			float endTime = Time.time;
-//		
-//			generationTime = endTime - startTime;
-//		}
 		
 		generatingMaze = false;
 		
@@ -388,11 +379,7 @@ public class GridGeneration : MonoBehaviour
 		
 		if(GUI.Button(new Rect(0 + 10, 0 + 210, 100, 50), "Delete"))
 		{
-			if(mazeActive == true)
-			{
-				mazeActive = false;
-				DeleteGrid();
-			}
+			DeleteGrid();
 		}
 		
 		if(GUI.Button (new Rect(Screen.width - 110, 0 + 10, 100, 50), "Print Queue"))
